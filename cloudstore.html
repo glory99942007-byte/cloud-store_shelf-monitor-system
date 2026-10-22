@@ -1,0 +1,443 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CloudShelf | Store Monitoring</title>
+<style>
+:root{--navy:#14213b;--blue:#2463eb;--bg:#f4f7fc;--line:#e4e9f2;--muted:#71809a;--green:#0e9f6e;--orange:#e99316;--red:#e54858}
+*{box-sizing:border-box}
+body{margin:0;font-family:Inter,"Segoe UI",Arial,sans-serif;background:var(--bg);color:#192641}
+button,input,select{font:inherit}
+button{cursor:pointer}
+.layout{min-height:100vh}
+.sidebar{position:fixed;inset:0 auto 0 0;width:235px;background:var(--navy);color:white;padding:24px 15px;display:flex;flex-direction:column;z-index:5}
+.brand{font-size:23px;font-weight:800;padding:0 8px 5px;letter-spacing:-.6px}
+.brand span{color:#62b6ff}
+.brand-sub{font-size:10px;color:#c5d1e5;padding:0 8px 30px}
+.nav-label{font-size:10px;color:#9aabc5;letter-spacing:1.5px;padding:12px}
+.nav{display:block;width:100%;padding:13px 12px;border:0;background:transparent;color:#d6e0f0;text-align:left;border-radius:8px;margin:3px 0;font-size:13px}
+.nav:hover,.nav.active{background:#2463eb;color:white}
+.nav span{display:inline-block;width:27px;font-size:16px}
+.side-bottom{margin-top:auto;border-top:1px solid #34415a;padding-top:18px;font-size:12px}
+.side-bottom p{color:#b6c3d7}
+.main{margin-left:235px;min-width:0}
+.topbar{height:70px;background:white;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 26px;gap:12px;position:sticky;top:0;z-index:4}
+.search{width:min(380px,48%);padding:11px 14px;border:1px solid var(--line);border-radius:8px;outline:none}
+.search:focus,input:focus,select:focus{border-color:var(--blue)!important}
+.online{font-size:12px;color:var(--green);white-space:nowrap}
+.menu{display:none}
+.content{padding:27px;max-width:1550px;margin:auto}
+.page{display:none}.page.active{display:block}
+.heading{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:20px}
+h1{font-size:27px;margin:0 0 7px;letter-spacing:-.7px}
+h2{font-size:18px;margin:0 0 5px}
+h3{font-size:15px;margin:0 0 8px}
+p{margin:0}
+.muted{color:var(--muted);font-size:12px;line-height:1.7}
+.hero{background:linear-gradient(115deg,#e8efff,#f1edff);border:1px solid #dbe4ff;padding:26px;border-radius:13px;margin-bottom:21px;display:flex;align-items:center;justify-content:space-between;gap:18px}
+.hero p{color:#64728e;font-size:13px;line-height:1.8;max-width:560px}
+.hero-art{font-size:75px;color:var(--blue)}
+.btn{padding:10px 13px;border:0;border-radius:7px;font-size:12px;font-weight:700}
+.primary{background:var(--blue);color:white}
+.green-btn{background:var(--green);color:white}
+.light-btn{background:#edf2ff;color:var(--blue)}
+.danger-btn{background:#fff0f1;color:var(--red)}
+.outline-btn{background:white;border:1px solid var(--line);color:#394865}
+.btn:hover{filter:brightness(.96)}
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-bottom:24px}
+.stat,.panel,.service{background:white;border:1px solid var(--line);border-radius:11px}
+.stat{padding:17px;min-width:0}
+.stat-top{display:flex;align-items:center;justify-content:space-between;font-size:12px;color:var(--muted);gap:5px}
+.stat-icon{background:#edf2ff;color:var(--blue);padding:9px;border-radius:8px;font-size:18px}
+.stat h2{font-size:25px;margin:13px 0 5px;overflow-wrap:anywhere}
+.green{color:var(--green)}.orange{color:var(--orange)}.red{color:var(--red)}
+.grid-main{display:grid;grid-template-columns:1.25fr 1fr .9fr;gap:14px;align-items:stretch}
+.panel{padding:17px;min-width:0}
+.panel-title{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:15px}
+.shelf-art{min-height:205px;border-radius:8px;background:linear-gradient(#36424a,#1a242c);padding:10px;display:grid;grid-template-rows:repeat(3,1fr);gap:5px;overflow:hidden}
+.shelf-row{display:flex;align-items:end;gap:4px;border-bottom:6px solid #9c9c91;background:linear-gradient(#555b5e,#30373a);padding:5px;min-width:0}
+.product-box{flex:1;min-width:0;height:60%;border-radius:3px 3px 0 0;display:flex;align-items:center;justify-content:center;font-size:clamp(10px,1.3vw,17px);border:1px solid #ffffff40}
+.product-box:nth-child(3n){height:85%}
+.product-box:nth-child(3n+1){height:72%}
+.stock-tag{font-size:10px;font-weight:800;margin-top:10px}
+.chart-area{display:flex;align-items:center;justify-content:center;gap:15px;min-height:165px}
+.donut{width:130px;height:130px;border-radius:50%;background:conic-gradient(#10a875 0 81.5%,#f59e0b 81.5% 96.8%,#ef4359 96.8%);display:grid;place-items:center;flex-shrink:0}
+.donut-inner{width:86px;height:86px;border-radius:50%;background:white;display:grid;place-content:center;text-align:center}
+.donut-inner strong{font-size:24px}.donut-inner small{font-size:10px;color:var(--muted)}
+.legend{font-size:11px;display:grid;gap:13px;min-width:0}
+.legend div{display:flex;justify-content:space-between;gap:12px}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px}
+.alert-list{display:grid}
+.alert-item{padding:13px 0;border-bottom:1px solid var(--line);display:flex;gap:10px;align-items:flex-start}
+.alert-item:last-child{border:0}
+.alert-icon{width:30px;height:30px;display:grid;place-items:center;border-radius:50%;background:#fff0e1;color:var(--orange);flex-shrink:0}
+.alert-item strong{font-size:11px;display:block;margin-bottom:5px}
+.alert-item small{font-size:10px;color:var(--muted)}
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:690px;font-size:11px}
+th,td{text-align:left;padding:13px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+th{font-size:10px;color:var(--muted);background:#f8faff;text-transform:uppercase}
+tr:last-child td{border-bottom:0}
+.badge{display:inline-block;padding:5px 7px;border-radius:5px;font-size:10px;font-weight:800}
+.in-stock{background:#e2f8ee;color:#087f5b}
+.low-stock{background:#fff2d9;color:#a56800}
+.out-stock{background:#ffe7e9;color:#c82f45}
+.actions{display:flex;gap:6px}
+.actions .btn{padding:7px 9px;font-size:10px}
+.service-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.service{padding:20px}
+.service-icon{width:44px;height:44px;display:grid;place-items:center;background:#edf2ff;border-radius:9px;font-size:23px;margin-bottom:15px}
+.service p{font-size:12px;color:var(--muted);line-height:1.8;min-height:45px}
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:17px}
+.toolbar input,.toolbar select,.field input,.field select{padding:10px;border:1px solid var(--line);border-radius:7px;background:white;outline:none}
+.toolbar input{flex:1;min-width:180px}
+.field{display:grid;gap:7px;margin-bottom:15px}
+.field label{font-size:12px;font-weight:700}
+.field input,.field select{width:100%}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 14px}
+.full{grid-column:1/-1}
+.modal-overlay{position:fixed;inset:0;background:#10192b99;display:none;align-items:center;justify-content:center;padding:15px;z-index:20}
+.modal-overlay.open{display:flex}
+.modal{background:white;border-radius:13px;padding:24px;width:100%;max-width:510px;max-height:90vh;overflow:auto}
+.modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
+.close{border:0;background:#edf0f6;padding:8px;border-radius:7px}
+.price-box{background:#edf2ff;padding:14px;border-radius:8px;display:flex;justify-content:space-between;margin:10px 0 17px}
+.price-box strong{color:var(--blue)}
+.empty{padding:25px;text-align:center;color:var(--muted);font-size:12px}
+footer{text-align:center;padding:23px;color:var(--muted);font-size:11px}
+.toast{position:fixed;right:20px;bottom:20px;background:#14213b;color:white;border-radius:8px;padding:14px 18px;display:none;z-index:40;font-size:12px;max-width:90vw}
+.toast.show{display:block}
+@media(max-width:1150px){.grid-main{grid-template-columns:1fr 1fr}.grid-main>.panel:first-child{grid-column:1/-1}.service-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:720px){.sidebar{transform:translateX(-100%);transition:.2s;width:245px}.sidebar.open{transform:translateX(0)}.main{margin:0}.menu{display:block}.topbar{padding:0 12px}.content{padding:17px 12px}.topbar .search{width:40%;font-size:11px}.grid-main{grid-template-columns:1fr}.grid-main>.panel:first-child{grid-column:auto}.service-grid{grid-template-columns:1fr}.hero-art{display:none}.hero{padding:20px}.form-grid{grid-template-columns:1fr}.full{grid-column:auto}.stats{gap:9px}.stat{padding:12px}.stat h2{font-size:22px}.heading{align-items:flex-start;flex-direction:column}}
+</style>
+</head>
+<body>
+<div class="sidebar" id="sidebar">
+  <div class="brand">☁ Cloud<span>Shelf</span></div>
+  <div class="brand-sub">STORE SHELF MONITORING SYSTEM</div>
+  <div class="nav-label">MAIN MENU</div>
+  <button class="nav active" data-page="dashboard"><span>▦</span>Dashboard</button>
+  <button class="nav" data-page="monitoring"><span>◉</span>Live Monitoring</button>
+  <button class="nav" data-page="inventory"><span>▤</span>Inventory</button>
+  <button class="nav" data-page="alerts"><span>⚠</span>Alerts</button>
+  <button class="nav" data-page="reports"><span>▧</span>Reports</button>
+  <button class="nav" data-page="settings"><span>⚙</span>Settings</button>
+  <div class="side-bottom"><strong>● Cloud System Online</strong><p>Local demo environment</p><button class="btn light-btn" id="resetBtn">Reset Demo Data</button></div>
+</div>
+
+<main class="main">
+<header class="topbar">
+  <div style="display:flex;align-items:center;gap:10px;flex:1">
+    <button class="btn outline-btn menu" id="menuBtn">☰</button>
+    <input class="search" id="globalSearch" placeholder="⌕ Search products, shelves..." aria-label="Search products">
+  </div>
+  <span class="online">● System Online</span>
+  <span class="muted" id="clock"></span>
+</header>
+
+<div class="content">
+<section class="page active" id="dashboard">
+  <div class="heading"><div><h1>Welcome, Admin!</h1><p class="muted">Monitor store shelves and keep inventory optimized.</p></div><button class="btn primary" id="addBtn">+ Add Product</button></div>
+  <div class="hero"><div><h2 style="font-size:24px;margin-bottom:10px">Smarter Shelf Management</h2><p>Monitor inventory levels, identify stock shortages and manage store products from one dashboard.</p><button class="btn primary" style="margin-top:16px" data-goto="monitoring">Open Monitoring →</button></div><div class="hero-art">☁</div></div>
+  <div class="stats">
+    <div class="stat"><div class="stat-top">Total Products <span class="stat-icon">▣</span></div><h2 id="totalProducts">0</h2><p class="muted">Registered products</p></div>
+    <div class="stat"><div class="stat-top">Shelves Monitored <span class="stat-icon">▤</span></div><h2 id="shelfCount">0</h2><p class="muted">Unique shelf locations</p></div>
+    <div class="stat"><div class="stat-top">Low / Empty Stock <span class="stat-icon">⚠</span></div><h2 class="orange" id="lowCount">0</h2><p class="muted">Requires attention</p></div>
+    <div class="stat"><div class="stat-top">Inventory Units <span class="stat-icon">▦</span></div><h2 id="unitCount">0</h2><p class="muted">Units currently recorded</p></div>
+  </div>
+  <div class="grid-main">
+    <div class="panel"><div class="panel-title"><h3>Live Shelf Monitoring</h3><span class="online">● Demo</span></div><div class="shelf-art" id="shelfArt"></div><div class="toolbar" style="margin:12px 0 0"><select id="shelfSelect" aria-label="Select shelf" style="flex:1"><option value="all">All Shelves</option></select><button class="btn primary" id="scanBtn">⟳ Scan Shelf</button></div><p class="muted" style="margin-top:8px">Illustrative shelf visualization; no camera connected.</p></div>
+    <div class="panel"><div class="panel-title"><h3>Stock Level Overview</h3></div><div class="chart-area"><div class="donut" id="donut"><div class="donut-inner"><strong id="donutTotal">0</strong><small>Products</small></div></div><div class="legend" id="legend"></div></div><hr style="border:0;border-top:1px solid var(--line);margin:10px 0"><h3>Inventory Summary</h3><p class="muted" id="summaryText"></p></div>
+    <div class="panel"><div class="panel-title"><h3>Recent Alerts</h3><button class="btn light-btn" data-goto="alerts">View All</button></div><div class="alert-list" id="recentAlerts"></div></div>
+  </div>
+  <div class="heading" style="margin-top:28px"><div><h2>Recent Inventory</h2><p class="muted">Latest product stock records</p></div><button class="btn outline-btn" data-goto="inventory">Manage Inventory →</button></div>
+  <div class="panel"><div class="table-wrap"><table><thead><tr><th>Product</th><th>Category</th><th>Shelf</th><th>Quantity</th><th>Status</th><th>Actions</th></tr></thead><tbody id="recentRows"></tbody></table></div><div class="empty" id="recentEmpty">No products found.</div></div>
+</section>
+
+<section class="page" id="monitoring">
+  <div class="heading"><div><h1>Live Shelf Monitoring</h1><p class="muted">Review stock conditions by shelf location.</p></div><button class="btn primary" id="monitorScanBtn">⟳ Run Scan</button></div>
+  <div class="hero"><div><h2>Monitoring Simulator</h2><p>Run a simulated shelf scan to refresh stock status and generate alerts from current inventory quantities.</p></div><div class="hero-art">▤</div></div>
+  <div class="stats"><div class="stat"><p class="muted">Shelves</p><h2 id="monShelves">0</h2></div><div class="stat"><p class="muted">Healthy products</p><h2 class="green" id="monHealthy">0</h2></div><div class="stat"><p class="muted">Low stock</p><h2 class="orange" id="monLow">0</h2></div><div class="stat"><p class="muted">Out of stock</p><h2 class="red" id="monOut">0</h2></div></div>
+  <div class="panel"><div class="panel-title"><h3>Shelf Status Details</h3><select id="monitorFilter"><option value="all">All Statuses</option><option value="In Stock">In Stock</option><option value="Low Stock">Low Stock</option><option value="Out of Stock">Out of Stock</option></select></div><div class="table-wrap"><table><thead><tr><th>Product</th><th>Shelf</th><th>Quantity</th><th>Minimum Level</th><th>Status</th><th>Action</th></tr></thead><tbody id="monitorRows"></tbody></table></div></div>
+</section>
+
+<section class="page" id="inventory">
+  <div class="heading"><div><h1>Inventory Management</h1><p class="muted">Add products, update quantities and restock shelves.</p></div><button class="btn primary" id="inventoryAddBtn">+ Add Product</button></div>
+  <div class="stats"><div class="stat"><p class="muted">Products</p><h2 id="invTotal">0</h2></div><div class="stat"><p class="muted">Total units</p><h2 id="invUnits">0</h2></div><div class="stat"><p class="muted">Low stock</p><h2 id="invLow">0</h2></div><div class="stat"><p class="muted">Empty products</p><h2 id="invOut">0</h2></div></div>
+  <div class="panel"><div class="toolbar"><input id="inventorySearch" placeholder="Search product, category or shelf..."><select id="inventoryStatus"><option value="all">All stock statuses</option><option>In Stock</option><option>Low Stock</option><option>Out of Stock</option></select><button class="btn outline-btn" id="exportBtn">↓ Export CSV</button></div><div class="table-wrap"><table><thead><tr><th>Product</th><th>Category</th><th>Shelf</th><th>Quantity</th><th>Minimum</th><th>Status</th><th>Actions</th></tr></thead><tbody id="inventoryRows"></tbody></table></div><div class="empty" id="inventoryEmpty">No matching products.</div></div>
+</section>
+
+<section class="page" id="alerts">
+  <div class="heading"><div><h1>Inventory Alerts</h1><p class="muted">Products that need stock replenishment.</p></div><button class="btn outline-btn" id="refreshAlerts">↻ Refresh</button></div>
+  <div class="stats"><div class="stat"><p class="muted">All alerts</p><h2 id="alertTotal">0</h2></div><div class="stat"><p class="muted">Low stock</p><h2 class="orange" id="alertLow">0</h2></div><div class="stat"><p class="muted">Out of stock</p><h2 class="red" id="alertOut">0</h2></div><div class="stat"><p class="muted">Products monitored</p><h2 id="alertProducts">0</h2></div></div>
+  <div class="panel"><div class="panel-title"><h3>Products Requiring Attention</h3><select id="alertFilter"><option value="all">All Alerts</option><option value="Low Stock">Low Stock</option><option value="Out of Stock">Out of Stock</option></select></div><div class="table-wrap"><table><thead><tr><th>Product</th><th>Shelf</th><th>Current Stock</th><th>Minimum Level</th><th>Status</th><th>Action</th></tr></thead><tbody id="alertRows"></tbody></table></div><div class="empty" id="alertEmpty">Great! No stock alerts.</div></div>
+</section>
+
+<section class="page" id="reports">
+  <div class="heading"><div><h1>Inventory Reports</h1><p class="muted">Stock distribution and inventory valuation.</p></div><button class="btn primary" id="reportExport">Download CSV Report</button></div>
+  <div class="stats"><div class="stat"><p class="muted">Total SKUs</p><h2 id="repSkus">0</h2></div><div class="stat"><p class="muted">Inventory units</p><h2 id="repUnits">0</h2></div><div class="stat"><p class="muted">Estimated value</p><h2 id="repValue">₹0</h2></div><div class="stat"><p class="muted">Needs restock</p><h2 id="repRestock">0</h2></div></div>
+  <div class="panel"><div class="panel-title"><h3>Stock Distribution by Category</h3></div><div id="categoryBars"></div></div>
+  <div class="panel" style="margin-top:15px"><div class="panel-title"><h3>Restock Recommendations</h3></div><div class="table-wrap"><table><thead><tr><th>Product</th><th>Shelf</th><th>Current Units</th><th>Suggested Restock</th><th>Action</th></tr></thead><tbody id="restockRows"></tbody></table></div></div>
+</section>
+
+<section class="page" id="settings">
+  <div class="heading"><div><h1>System Settings</h1><p class="muted">Configure the demo monitoring rules.</p></div></div>
+  <div class="panel" style="max-width:650px"><h3>Store Configuration</h3><form id="settingsForm">
+    <div class="field"><label for="storeName">Store name</label><input id="storeName" required maxlength="100"></div>
+    <div class="field"><label for="threshold">Low stock threshold (units)</label><input id="threshold" type="number" min="1" max="99999" required></div>
+    <div class="field"><label for="adminName">Administrator name</label><input id="adminName" required maxlength="60"></div>
+    <button class="btn primary" type="submit">Save Settings</button>
+  </form><p class="muted" style="margin-top:15px">Settings apply to this browser's demo inventory only.</p></div>
+</section>
+<footer>CloudShelf · Cloud-Based Store Shelf Monitoring System · Portfolio Demo</footer>
+</div>
+</main>
+
+<!-- Product modal -->
+<div class="modal-overlay" id="productModal">
+<div class="modal"><div class="panel-title"><h2 id="productModalTitle">Add Product</h2><button class="close" data-close="productModal">✕</button></div>
+<form id="productForm"><input id="productId" type="hidden">
+<div class="form-grid">
+<div class="field full"><label for="productName">Product name *</label><input id="productName" maxlength="100" required></div>
+<div class="field"><label for="productCategory">Category *</label><select id="productCategory"><option>Dairy</option><option>Bakery</option><option>Beverages</option><option>Snacks</option><option>Grocery</option><option>Household</option><option>Other</option></select></div>
+<div class="field"><label for="productShelf">Shelf location *</label><select id="productShelf"></select></div>
+<div class="field"><label for="productQty">Current quantity *</label><input id="productQty" type="number" min="0" max="999999" required></div>
+<div class="field"><label for="productMin">Minimum stock level *</label><input id="productMin" type="number" min="1" max="999999" required></div>
+<div class="field full"><label for="productPrice">Unit price (₹) *</label><input id="productPrice" type="number" min="0" max="99999999" step=".01" required></div>
+</div><button class="btn primary" style="width:100%" type="submit">Save Product</button></form>
+</div></div>
+
+<!-- Restock modal -->
+<div class="modal-overlay" id="restockModal">
+<div class="modal"><div class="panel-title"><h2>Restock Product</h2><button class="close" data-close="restockModal">✕</button></div>
+<p id="restockInfo" class="muted" style="margin-bottom:15px"></p>
+<form id="restockForm"><input id="restockId" type="hidden"><div class="field"><label for="restockQty">Quantity to add</label><input id="restockQty" type="number" min="1" max="999999" value="10" required></div><button class="btn green-btn" style="width:100%" type="submit">Confirm Restock</button></form>
+</div></div>
+
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+"use strict";
+const $=id=>document.getElementById(id);
+const KEY="cloudshelf_inventory_v1",SETTINGS_KEY="cloudshelf_settings_v1";
+const initialProducts=[
+{id:1,name:"Milk 1L",category:"Dairy",shelf:"Shelf 1",qty:0,min:5,price:32,updated:""},
+{id:2,name:"Bread",category:"Bakery",shelf:"Shelf 2",qty:2,min:6,price:40,updated:""},
+{id:3,name:"Eggs (Pack)",category:"Dairy",shelf:"Shelf 3",qty:3,min:6,price:75,updated:""},
+{id:4,name:"Juice Pack",category:"Beverages",shelf:"Shelf 4",qty:0,min:5,price:55,updated:""},
+{id:5,name:"Potato Chips",category:"Snacks",shelf:"Shelf 5",qty:12,min:5,price:20,updated:""},
+{id:6,name:"Rice 1kg",category:"Grocery",shelf:"Shelf 6",qty:18,min:5,price:65,updated:""},
+{id:7,name:"Dish Soap",category:"Household",shelf:"Shelf 7",qty:4,min:5,price:90,updated:""},
+{id:8,name:"Cookies",category:"Snacks",shelf:"Shelf 2",qty:25,min:5,price:35,updated:""}
+];
+const read=(key,fallback)=>{try{const v=localStorage.getItem(key);return v===null?fallback:JSON.parse(v)}catch{return fallback}};
+let products=read(KEY,null);
+if(!Array.isArray(products))products=initialProducts.map(p=>({...p}));
+let settings=read(SETTINGS_KEY,{store:"CloudShelf Demo Store",threshold:5,admin:"Admin"});
+if(!settings||typeof settings!=="object")settings={store:"CloudShelf Demo Store",threshold:5,admin:"Admin"};
+let alertsLog=[];
+const money=n=>"₹"+(Number(n)||0).toLocaleString("en-IN",{maximumFractionDigits:2});
+const safe=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+function toast(msg){$("toast").textContent=msg;$("toast").classList.add("show");clearTimeout(toast.t);toast.t=setTimeout(()=>$("toast").classList.remove("show"),3000)}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(products));return true}catch{toast("Storage error. Browser storage may be full.");return false}}
+function saveSettings(){try{localStorage.setItem(SETTINGS_KEY,JSON.stringify(settings));return true}catch{toast("Could not save settings.");return false}}
+function status(p){if(p.qty===0)return "Out of Stock";if(p.qty<=Math.max(Number(settings.threshold)||5,Number(p.min)||1))return "Low Stock";return "In Stock"}
+function badge(p){const s=status(p);return `<span class="badge ${s==="In Stock"?"in-stock":s==="Low Stock"?"low-stock":"out-stock"}">${s}</span>`}
+function showModal(id){$(id).classList.add("open")}
+function closeModal(id){$(id).classList.remove("open")}
+function uniqueShelves(){return [...new Set(products.map(p=>p.shelf))].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}))}
+function populateShelves(){
+const old=$("shelfSelect").value;
+$("shelfSelect").innerHTML='<option value="all">All Shelves</option>'+uniqueShelves().map(s=>`<option>${safe(s)}</option>`).join("");
+$("productShelf").innerHTML=Array.from({length:12},(_,i)=>"Shelf "+(i+1)).map(s=>`<option>${s}</option>`).join("");
+if([...$("shelfSelect").options].some(o=>o.value===old))$("shelfSelect").value=old;
+}
+function renderStats(){
+const total=products.length,units=products.reduce((a,p)=>a+p.qty,0);
+const low=products.filter(p=>status(p)==="Low Stock").length;
+const out=products.filter(p=>status(p)==="Out of Stock").length;
+const shelves=uniqueShelves().length;
+$("totalProducts").textContent=total;$("shelfCount").textContent=shelves;
+$("lowCount").textContent=low+out;$("unitCount").textContent=units;
+$("invTotal").textContent=total;$("invUnits").textContent=units;$("invLow").textContent=low;$("invOut").textContent=out;
+$("monShelves").textContent=shelves;$("monHealthy").textContent=products.filter(p=>status(p)==="In Stock").length;
+$("monLow").textContent=low;$("monOut").textContent=out;
+$("alertTotal").textContent=low+out;$("alertLow").textContent=low;$("alertOut").textContent=out;$("alertProducts").textContent=total;
+$("repSkus").textContent=total;$("repUnits").textContent=units;
+$("repValue").textContent=money(products.reduce((a,p)=>a+p.qty*p.price,0));
+$("repRestock").textContent=low+out;
+}
+function productRows(items,mode="inventory"){
+if(!items.length)return "";
+return items.map(p=>`<tr>
+<td><strong>${safe(p.name)}</strong></td>
+<td>${safe(p.category)}</td><td>${safe(p.shelf)}</td><td><strong class="${p.qty===0?"red":p.qty<=p.min?"orange":"green"}">${p.qty}</strong></td>
+${mode==="inventory"?`<td>${p.min}</td>`:""}
+<td>${badge(p)}</td><td><div class="actions">
+<button class="btn light-btn" data-view="${p.id}">View</button>
+<button class="btn green-btn" data-restock="${p.id}">Restock</button>
+${mode==="inventory"?`<button class="btn outline-btn" data-edit="${p.id}">Edit</button>`:""}
+</div></td></tr>`).join("");
+}
+function renderTables(){
+const recent=products.slice().sort((a,b)=>b.id-a.id).slice(0,5);
+$("recentRows").innerHTML=recent.map(p=>`<tr><td><strong>${safe(p.name)}</strong></td><td>${safe(p.category)}</td><td>${safe(p.shelf)}</td><td>${p.qty}</td><td>${badge(p)}</td><td><div class="actions"><button class="btn light-btn" data-view="${p.id}">View</button><button class="btn green-btn" data-restock="${p.id}">Restock</button></div></td></tr>`).join("");
+$("recentEmpty").style.display=recent.length?"none":"block";
+const query=$("inventorySearch").value.trim().toLowerCase(),filter=$("inventoryStatus").value;
+const list=products.filter(p=>(p.name+" "+p.category+" "+p.shelf).toLowerCase().includes(query)&&(filter==="all"||status(p)===filter));
+$("inventoryRows").innerHTML=productRows(list);
+$("inventoryEmpty").style.display=list.length?"none":"block";
+const mf=$("monitorFilter").value;
+const monitored=products.filter(p=>(mf==="all"||status(p)===mf)&&($("shelfSelect").value==="all"||p.shelf===$("shelfSelect").value));
+$("monitorRows").innerHTML=monitored.map(p=>`<tr><td>${safe(p.name)}</td><td>${safe(p.shelf)}</td><td>${p.qty}</td><td>${p.min}</td><td>${badge(p)}</td><td><button class="btn green-btn" data-restock="${p.id}">Restock</button></td></tr>`).join("");
+const alerts=products.filter(p=>status(p)!=="In Stock").filter(p=>$("alertFilter").value==="all"||status(p)===$("alertFilter").value);
+$("alertRows").innerHTML=alerts.map(p=>`<tr><td>${safe(p.name)}</td><td>${safe(p.shelf)}</td><td>${p.qty}</td><td>${p.min}</td><td>${badge(p)}</td><td><button class="btn green-btn" data-restock="${p.id}">Restock</button></td></tr>`).join("");
+$("alertEmpty").style.display=alerts.length?"none":"block";
+}
+function renderChart(){
+const healthy=products.filter(p=>status(p)==="In Stock").length;
+const low=products.filter(p=>status(p)==="Low Stock").length;
+const out=products.filter(p=>status(p)==="Out of Stock").length;
+const total=products.length||1;
+const g=healthy/total*100,o=low/total*100;
+$("donut").style.background=`conic-gradient(#10a875 0 ${g}%,#f59e0b ${g}% ${g+o}%,#ef4359 ${g+o}% 100%)`;
+$("donutTotal").textContent=products.length;
+$("legend").innerHTML=`<div><span><i class="dot" style="background:#10a875"></i>In Stock</span><strong>${healthy}</strong></div><div><span><i class="dot" style="background:#f59e0b"></i>Low Stock</span><strong>${low}</strong></div><div><span><i class="dot" style="background:#ef4359"></i>Out of Stock</span><strong>${out}</strong></div>`;
+$("summaryText").textContent=`${healthy} products are healthy. ${low+out} products need attention. Total stock quantity: ${products.reduce((a,p)=>a+p.qty,0)} units.`;
+const alerts=products.filter(p=>status(p)!=="In Stock").slice(0,5);
+$("recentAlerts").innerHTML=alerts.length?alerts.map(p=>`<div class="alert-item"><div class="alert-icon">${p.qty===0?"!":"⚠"}</div><div style="flex:1"><strong>${safe(p.name)} · ${safe(p.shelf)}</strong><small class="${p.qty===0?"red":"orange"}">${p.qty===0?"Out of stock":`Low stock (${p.qty} units left)`}</small></div></div>`).join(""):'<div class="empty">No stock alerts.</div>';
+const cats={};products.forEach(p=>cats[p.category]=(cats[p.category]||0)+p.qty);
+$("categoryBars").innerHTML=Object.entries(cats).map(([name,n])=>{
+const max=Math.max(1,...Object.values(cats));
+return `<div style="margin:15px 0"><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:7px"><strong>${safe(name)}</strong><span>${n} units</span></div><div style="height:8px;background:#edf0f7;border-radius:8px;overflow:hidden"><div style="width:${n/max*100}%;height:100%;background:#2463eb;border-radius:8px"></div></div></div>`;
+}).join("")||'<p class="muted">No inventory data available.</p>';
+const recommendations=products.filter(p=>status(p)!=="In Stock");
+$("restockRows").innerHTML=recommendations.map(p=>`<tr><td>${safe(p.name)}</td><td>${safe(p.shelf)}</td><td>${p.qty}</td><td>${Math.max(0,p.min*2-p.qty)}</td><td><button class="btn green-btn" data-restock="${p.id}">Restock</button></td></tr>`).join("");
+}
+function renderShelf(){
+const shelf=$("shelfSelect").value;
+const list=products.filter(p=>shelf==="all"||p.shelf===shelf).slice(0,15);
+const colors=["#f6c453","#5cb6df","#78bd86","#e98a68","#b3a1e8","#e8a9bf"];
+$("shelfArt").innerHTML=[0,1,2].map(row=>`<div class="shelf-row">${list.filter((p,i)=>i%3===row).slice(0,8).map((p,i)=>`<div class="product-box" title="${safe(p.name)}: ${p.qty} units" style="background:${colors[(p.id+i)%colors.length]};opacity:${p.qty===0?".38":"1"}">${p.qty===0?"!":"▥"}</div>`).join("")||'<span style="color:white;font-size:11px">No products assigned</span>'}</div>`).join("");
+}
+function render(){
+populateShelves();renderStats();renderTables();renderChart();renderShelf();
+}
+function go(page){
+if(!$ (page))return;
+document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
+$(page).classList.add("active");
+document.querySelectorAll(".nav[data-page]").forEach(b=>b.classList.toggle("active",b.dataset.page===page));
+$("sidebar").classList.remove("open");
+window.scrollTo({top:0,behavior:"smooth"});
+}
+function addProduct(editId=null){
+$("productForm").reset();$("productId").value="";
+$("productModalTitle").textContent=editId?"Edit Product":"Add Product";
+if(editId!==null){
+const p=products.find(x=>x.id===Number(editId));if(!p)return;
+$("productId").value=p.id;$("productName").value=p.name;$("productCategory").value=p.category;
+$("productShelf").value=p.shelf;$("productQty").value=p.qty;$("productMin").value=p.min;$("productPrice").value=p.price;
+}
+showModal("productModal");
+}
+function restockProduct(id){
+const p=products.find(x=>x.id===Number(id));if(!p)return;
+$("restockId").value=p.id;$("restockQty").value=Math.max(1,p.min*2-p.qty);
+$("restockInfo").textContent=`${p.name} · ${p.shelf} · Current stock: ${p.qty}`;
+showModal("restockModal");
+}
+function exportCSV(){
+const headers=["ID","Product","Category","Shelf","Quantity","Minimum Stock","Unit Price INR","Status","Last Updated"];
+const quote=x=>'"'+String(x??"").replace(/"/g,'""')+'"';
+const rows=products.map(p=>[p.id,p.name,p.category,p.shelf,p.qty,p.min,p.price,status(p),p.updated].map(quote).join(","));
+const blob=new Blob(["\uFEFF"+[headers.map(quote).join(","),...rows].join("\r\n")],{type:"text/csv;charset=utf-8"});
+const url=URL.createObjectURL(blob),a=document.createElement("a");
+a.href=url;a.download="cloudshelf-inventory.csv";document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);toast("Inventory CSV exported.");
+}
+function scan(){
+const now=new Date().toLocaleTimeString();
+alertsLog.push({time:now,count:products.filter(p=>status(p)!=="In Stock").length});
+render();toast("Shelf scan simulated. Inventory statuses refreshed.");
+}
+function viewProduct(id){
+const p=products.find(x=>x.id===Number(id));if(!p)return;
+alert(`PRODUCT DETAILS\n\nName: ${p.name}\nCategory: ${p.category}\nShelf: ${p.shelf}\nQuantity: ${p.qty}\nMinimum level: ${p.min}\nStatus: ${status(p)}\nUnit price: ${money(p.price)}\nStock value: ${money(p.qty*p.price)}\nLast updated: ${p.updated||"Not recorded"}`);
+}
+document.querySelectorAll(".nav[data-page]").forEach(b=>b.addEventListener("click",()=>go(b.dataset.page)));
+document.querySelectorAll("[data-goto]").forEach(b=>b.addEventListener("click",()=>go(b.dataset.goto)));
+$("menuBtn").addEventListener("click",()=>$("sidebar").classList.toggle("open"));
+$("addBtn").addEventListener("click",()=>addProduct());
+$("inventoryAddBtn").addEventListener("click",()=>addProduct());
+$("scanBtn").addEventListener("click",scan);
+$("monitorScanBtn").addEventListener("click",scan);
+$("exportBtn").addEventListener("click",exportCSV);
+$("reportExport").addEventListener("click",exportCSV);
+$("inventorySearch").addEventListener("input",renderTables);
+$("inventoryStatus").addEventListener("change",renderTables);
+$("monitorFilter").addEventListener("change",renderTables);
+$("alertFilter").addEventListener("change",renderTables);
+$("shelfSelect").addEventListener("change",()=>{renderShelf();renderTables()});
+$("refreshAlerts").addEventListener("click",()=>{renderTables();toast("Alerts refreshed.")});
+$("globalSearch").addEventListener("input",()=>{
+$("inventorySearch").value=$("globalSearch").value;
+go("inventory");renderTables();
+});
+document.addEventListener("click",e=>{
+const close=e.target.closest("[data-close]");if(close)closeModal(close.dataset.close);
+const restock=e.target.closest("[data-restock]");if(restock)restockProduct(restock.dataset.restock);
+const view=e.target.closest("[data-view]");if(view)viewProduct(view.dataset.view);
+const edit=e.target.closest("[data-edit]");if(edit)addProduct(edit.dataset.edit);
+});
+document.querySelectorAll(".modal-overlay").forEach(m=>m.addEventListener("click",e=>{if(e.target===m)m.classList.remove("open")}));
+document.addEventListener("keydown",e=>{if(e.key==="Escape")document.querySelectorAll(".modal-overlay").forEach(m=>m.classList.remove("open"))});
+
+$("productForm").addEventListener("submit",e=>{
+e.preventDefault();
+const id=$("productId").value;
+const name=$("productName").value.trim();
+const qty=Number($("productQty").value),min=Number($("productMin").value),price=Number($("productPrice").value);
+const shelf=$("productShelf").value,category=$("productCategory").value;
+if(name.length<2||!shelf||!Number.isInteger(qty)||qty<0||!Number.isInteger(min)||min<1||!Number.isFinite(price)||price<0){toast("Please enter valid product details.");return}
+const old=id?products.find(p=>p.id===Number(id)):null;
+const item={id:old?old.id:(products.length?Math.max(...products.map(p=>p.id))+1:1),name:name.slice(0,100),category,shelf,qty,min,price,updated:new Date().toLocaleString()};
+if(old)Object.assign(old,item);else products.unshift(item);
+if(!save()){if(old)Object.assign(old,old);else products=products.filter(p=>p.id!==item.id);return}
+closeModal("productModal");render();toast(old?"Product updated.":"Product added successfully.");
+});
+$("restockForm").addEventListener("submit",e=>{
+e.preventDefault();
+const p=products.find(x=>x.id===Number($("restockId").value));
+const qty=Number($("restockQty").value);
+if(!p||!Number.isInteger(qty)||qty<1||qty>999999){toast("Enter a valid restock quantity.");return}
+const old=p.qty,oldDate=p.updated;
+if(old+qty>999999){toast("Quantity is too large.");return}
+p.qty+=qty;p.updated=new Date().toLocaleString();
+if(!save()){p.qty=old;p.updated=oldDate;return}
+closeModal("restockModal");render();toast(`${p.name} restocked. New quantity: ${p.qty}`);
+});
+$("settingsForm").addEventListener("submit",e=>{
+e.preventDefault();
+const old={...settings};
+const store=$("storeName").value.trim(),admin=$("adminName").value.trim(),threshold=Number($("threshold").value);
+if(!store||!admin||!Number.isInteger(threshold)||threshold<1||threshold>99999){toast("Enter valid settings.");return}
+settings={store,admin,threshold};
+if(!saveSettings()){settings=old;return}
+render();toast("Settings saved successfully.");
+});
+$("resetBtn").addEventListener("click",()=>{
+if(!confirm("Reset all demo inventory to the original sample data?"))return;
+const old=products;products=initialProducts.map(p=>({...p,updated:new Date().toLocaleString()}));
+if(!save()){products=old;return}
+render();toast("Demo inventory reset.");
+});
+$("clock").textContent=new Date().toLocaleDateString("en-IN",{day:"2-digit",month:"short",year:"numeric"});
+$("storeName").value=settings.store||"CloudShelf Demo Store";
+$("adminName").value=settings.admin||"Admin";
+$("threshold").value=Number(settings.threshold)||5;
+render();
+</script>
+</body>
+</html>
